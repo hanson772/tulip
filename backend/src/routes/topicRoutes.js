@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getTopics, getMyTopics, getMyDrafts, getMyPublished, getTopic, createTopic, updateTopic, deleteTopic, publishTopic,
+  getTopics, getMyTopics, getMyDrafts, getMyPublished, getMyFavorites, getMyParticipated, getReviewTopics, getTopic, createTopic, updateTopic, deleteTopic, publishTopic, reviewTopic,
   createOpinion, updateOpinion, deleteOpinion, supportOpinion,
   getComments, createComment
 } = require('../controllers/topicController');
@@ -17,6 +17,15 @@ router.route('/mine/drafts')
 router.route('/mine/published')
   .get(auth, getMyPublished);
 
+router.route('/mine/favorites')
+  .get(auth, getMyFavorites);
+
+router.route('/mine/participated')
+  .get(auth, getMyParticipated);
+
+router.route('/review')
+  .get(auth, getReviewTopics);
+
 // Topics
 router.route('/')
   .get(getTopics)
@@ -30,6 +39,10 @@ router.route('/:id')
 // Publish
 router.route('/:id/publish')
   .post(auth, publishTopic);
+
+// Review (admin)
+router.route('/:id/review')
+  .post(auth, reviewTopic);
 
 // Opinions on a topic
 router.route('/:id/opinions')

@@ -1,6 +1,11 @@
 const { getDb } = require('../config/database');
 
 const User = {
+  findById(id) {
+    const db = getDb();
+    return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  },
+
   findOne(field, value) {
     const db = getDb();
     const allowedFields = ['id', 'email'];

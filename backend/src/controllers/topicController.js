@@ -2,6 +2,7 @@ const Topic = require('../models/Topic');
 const Opinion = require('../models/Opinion');
 const Tag = require('../models/Tag');
 const Comment = require('../models/Comment');
+const Role = require('../models/Role');
 
 const getTopics = (req, res) => {
   try {
@@ -40,6 +41,33 @@ const getMyPublished = (req, res) => {
   }
 };
 
+const getMyFavorites = (req, res) => {
+  try {
+    const topics = Topic.findFavoritesByUser(req.userId);
+    res.json(topics);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching favorites' });
+  }
+};
+
+const getMyParticipated = (req, res) => {
+  try {
+    const topics = Topic.findParticipatedByUser(req.userId);
+    res.json(topics);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching participated topics' });
+  }
+};
+
+const getReviewTopics = (req, res) => {
+  try {
+    const topics = Topic.findReviewTopics();
+    res.json(topics);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching review topics' });
+  }
+};
+
 const getTopic = (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -47,9 +75,12 @@ const getTopic = (req, res) => {
     if (!topic) {
       return res.status(404).json({ message: 'Topic not found' });
     }
-    // Non-owners can only view published or expired topics
+    // Non-owners can only view published or expired topics (unless admin)
     if (topic.status !== 'published' && topic.status !== 'expired' && topic.user_id !== req.userId) {
-      return res.status(404).json({ message: 'Topic not found' });
+      const isAdmin = req.userId && Role.getRoleNames(req.userId).includes('admin');
+      if (!isAdmin) {
+        return res.status(404).json({ message: 'Topic not found' });
+      }
     }
     // Include which opinion the current user has supported
     if (req.userId) {
@@ -165,10 +196,33 @@ const publishTopic = (req, res) => {
       return res.status(400).json({ message: 'At least one opinion is required before publishing' });
     }
 
-    const updated = Topic.updateStatus(id, 'published');
+    const updated = Topic.updateStatus(id, 'reviewing');
     res.json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Server error publishing topic' });
+  }
+};
+
+const reviewTopic = (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const topic = Topic.findById(id);
+    if (!topic) {
+      return res.status(404).json({ message: 'Topic not found' });
+    }
+    if (topic.status !== 'reviewing') {
+      return res.status(400).json({ message: 'Topic is not in reviewing status' });
+    }
+
+    const roles = Role.getRoleNames(req.userId);
+    if (!roles.includes('admin')) {
+      return res.status(403).json({ message: 'Only admins can review topics' });
+    }
+
+    const updated = Topic.updateStatus(id, 'published');
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error reviewing topic' });
   }
 };
 
@@ -370,7 +424,7 @@ const createComment = (req, res) => {
 };
 
 module.exports = {
-  getTopics, getMyTopics, getMyDrafts, getMyPublished, getTopic, createTopic, updateTopic, deleteTopic, publishTopic,
+  getTopics, getMyTopics, getMyDrafts, getMyPublished, getMyFavorites, getMyParticipated, getReviewTopics, getTopic, createTopic, updateTopic, deleteTopic, publishTopic, reviewTopic,
   createOpinion, updateOpinion, deleteOpinion, supportOpinion,
   getComments, createComment
 };

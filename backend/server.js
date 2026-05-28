@@ -24,9 +24,10 @@ app.get('/', (req, res) => {
 
 // API routes
 app.use('/api/users', require('./src/routes/userRoutes'));
-app.use('/api/posts', require('./src/routes/postRoutes'));
 app.use('/api/topics', require('./src/routes/topicRoutes'));
 app.use('/api/tags', require('./src/routes/tagRoutes'));
+app.use('/api/favorites', require('./src/routes/favoriteRoutes'));
+app.use('/api/roles', require('./src/routes/roleRoutes'));
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

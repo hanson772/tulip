@@ -3,9 +3,8 @@
     <!-- Fixed Top Bar -->
     <div class="my-topbar">
       <button class="topbar-back" @click="$router.back()">
-        <el-icon :size="22"><ArrowLeft /></el-icon>
+        <el-icon :size="26"><ArrowLeft /></el-icon>
       </button>
-      <span class="topbar-title">我的</span>
       <div class="topbar-spacer" />
     </div>
 
@@ -15,7 +14,7 @@
         <el-tab-pane label="草稿箱" name="drafts" />
         <el-tab-pane label="我的主题" name="published" />
         <el-tab-pane label="我的参与" name="participated" />
-        <el-tab-pane label="我的关注" name="followed" />
+        <el-tab-pane label="我的收藏" name="favorites" />
       </el-tabs>
 
       <!-- Drafts Tab -->
@@ -41,7 +40,6 @@
             <p class="card-desc">{{ item.content }}</p>
             <div class="card-footer">
               <span class="card-stat">
-                <el-icon :size="14"><ChatDotSquare /></el-icon>
                 {{ item.opinion_count || 0 }} 条看法
               </span>
               <el-tag :type="statusType(item.status)" size="small" effect="plain">
@@ -75,7 +73,6 @@
             <p class="card-desc">{{ item.content }}</p>
             <div class="card-footer">
               <span class="card-stat">
-                <el-icon :size="14"><ChatDotSquare /></el-icon>
                 {{ item.opinion_count || 0 }} 条看法
               </span>
               <el-tag :type="statusType(item.status)" size="small" effect="plain">
@@ -88,15 +85,67 @@
 
       <!-- Participated Tab -->
       <template v-if="activeTab === 'participated'">
-        <div class="empty-state">
+        <div v-if="participatedLoading" class="loading-state">
+          <el-skeleton :rows="4" animated />
+        </div>
+        <div v-else-if="participated.length === 0" class="empty-state">
           <el-empty description="暂无参与记录" />
+        </div>
+        <div v-else class="card-list">
+          <div
+            v-for="item in participated"
+            :key="item.id"
+            class="topic-card"
+            @click="goToDetail(item.id)"
+          >
+            <div class="card-header">
+              <span class="card-author">{{ item.author_name }}</span>
+              <span class="card-time">{{ formatTime(item.created_at) }}</span>
+            </div>
+            <h3 class="card-title">{{ item.title }}</h3>
+            <p class="card-desc">{{ item.content }}</p>
+            <div class="card-footer">
+              <span class="card-stat">
+                {{ item.opinion_count || 0 }} 条看法
+              </span>
+              <el-tag :type="statusType(item.status)" size="small" effect="plain">
+                {{ statusLabel(item.status) }}
+              </el-tag>
+            </div>
+          </div>
         </div>
       </template>
 
-      <!-- Followed Tab -->
-      <template v-if="activeTab === 'followed'">
-        <div class="empty-state">
-          <el-empty description="暂无关注" />
+      <!-- Favorites Tab -->
+      <template v-if="activeTab === 'favorites'">
+        <div v-if="favoritesLoading" class="loading-state">
+          <el-skeleton :rows="4" animated />
+        </div>
+        <div v-else-if="favorites.length === 0" class="empty-state">
+          <el-empty description="暂无收藏" />
+        </div>
+        <div v-else class="card-list">
+          <div
+            v-for="item in favorites"
+            :key="item.id"
+            class="topic-card"
+            @click="goToDetail(item.id)"
+          >
+            <div class="card-header">
+              <span class="card-author">{{ item.author_name }}</span>
+              <span class="card-time">{{ formatTime(item.created_at) }}</span>
+            </div>
+            <h3 class="card-title">{{ item.title }}</h3>
+            <p class="card-desc">{{ item.content }}</p>
+            <div class="card-footer">
+              <span class="card-stat">
+                {{ item.opinion_count || 0 }} 条看法
+              </span>
+              <el-tag :type="statusType(item.status)" size="small" effect="plain">
+                {{ statusLabel(item.status) }}
+              </el-tag>
+            </div>
+          </div>
         </div>
       </template>
     </div>
@@ -107,11 +156,11 @@
 import { computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowLeft, ChatDotSquare } from '@element-plus/icons-vue';
+import { ArrowLeft } from '@element-plus/icons-vue';
 
 export default {
   name: 'MyProfileView',
-  components: { ArrowLeft, ChatDotSquare },
+  components: { ArrowLeft },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -123,6 +172,10 @@ export default {
     const draftsLoading = computed(() => store.getters.myDraftsLoading);
     const published = computed(() => store.getters.myPublished);
     const publishedLoading = computed(() => store.getters.myPublishedLoading);
+    const favorites = computed(() => store.getters.myFavorites);
+    const favoritesLoading = computed(() => store.getters.myFavoritesLoading);
+    const participated = computed(() => store.getters.myParticipated);
+    const participatedLoading = computed(() => store.getters.myParticipatedLoading);
 
     function statusType(status) {
       const map = { draft: 'info', reviewing: 'warning', published: 'success', expired: 'danger' };
@@ -164,6 +217,10 @@ export default {
         store.dispatch('fetchMyDrafts');
       } else if (t === 'published') {
         store.dispatch('fetchMyPublished');
+      } else if (t === 'favorites') {
+        store.dispatch('fetchMyFavorites');
+      } else if (t === 'participated') {
+        store.dispatch('fetchMyParticipated');
       }
     }, { immediate: true });
 
@@ -173,6 +230,10 @@ export default {
       draftsLoading,
       published,
       publishedLoading,
+      favorites,
+      favoritesLoading,
+      participated,
+      participatedLoading,
       statusType,
       statusLabel,
       formatTime,
@@ -209,24 +270,19 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border: none;
   background: transparent;
   cursor: pointer;
   color: #303133;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
 .topbar-back:active {
   background: #f0f0f0;
   border-radius: 8px;
-}
-
-.topbar-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #303133;
 }
 
 .topbar-spacer {

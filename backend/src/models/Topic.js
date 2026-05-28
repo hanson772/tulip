@@ -62,6 +62,35 @@ const Topic = {
     return _attachTags(topics);
   },
 
+  findFavoritesByUser(userId) {
+    const db = getDb();
+    const topics = db.prepare(`
+      ${BASE_SELECT}
+      JOIN favorites f ON f.topic_id = t.id
+      WHERE f.user_id = ?
+      ORDER BY f.created_at DESC
+    `).all(userId) || [];
+    return _attachTags(topics);
+  },
+
+  findParticipatedByUser(userId) {
+    const db = getDb();
+    const topics = db.prepare(`
+      ${BASE_SELECT}
+      JOIN supports s ON s.topic_id = t.id
+      WHERE s.user_id = ?
+      GROUP BY t.id
+      ORDER BY MAX(s.created_at) DESC
+    `).all(userId) || [];
+    return _attachTags(topics);
+  },
+
+  findReviewTopics() {
+    const db = getDb();
+    const topics = db.prepare(`${BASE_SELECT} WHERE t.status = 'reviewing' ORDER BY t.created_at DESC`).all() || [];
+    return _attachTags(topics);
+  },
+
   findById(id) {
     const db = getDb();
     const topic = db.prepare(`

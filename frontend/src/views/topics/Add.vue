@@ -3,9 +3,8 @@
     <!-- Fixed Top Bar -->
     <div class="add-topbar">
       <button class="topbar-back" @click="$router.back()">
-        <el-icon :size="22"><ArrowLeft /></el-icon>
+        <el-icon :size="26"><ArrowLeft /></el-icon>
       </button>
-      <span class="topbar-title">新建主题</span>
       <div class="topbar-spacer" />
     </div>
 
@@ -114,18 +113,15 @@ export default {
 .topbar-back {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border: none;
   background: transparent;
   cursor: pointer;
   color: #303133;
-  padding: 4px;
-}
-
-.topbar-title {
-  margin-left: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #303133;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .topbar-spacer {

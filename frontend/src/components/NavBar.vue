@@ -24,7 +24,7 @@
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="console">
+              <el-dropdown-item v-if="isAdmin" command="console">
                 <el-icon><Monitor /></el-icon>控制台
               </el-dropdown-item>
               <el-dropdown-item command="logout" divided>
@@ -50,7 +50,7 @@
           <a href="#" @click.prevent="$emit('open-login'); mobileMenuOpen = false">Login</a>
         </template>
         <template v-else>
-          <router-link to="/topics/add" @click="mobileMenuOpen = false">控制台</router-link>
+          <router-link v-if="isAdmin" to="/console" @click="mobileMenuOpen = false">控制台</router-link>
           <a href="#" @click.prevent="handleLogout; mobileMenuOpen = false">退出登录</a>
         </template>
       </div>
@@ -72,13 +72,16 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['isLoggedIn', 'currentUser'])
+    ...mapGetters(['isLoggedIn', 'currentUser']),
+    isAdmin() {
+      return this.$store.getters.hasRole('admin');
+    }
   },
   methods: {
     ...mapActions(['logout']),
     handleCommand(command) {
       if (command === 'console') {
-        this.$router.push('/topics/add');
+        this.$router.push('/console');
       } else if (command === 'logout') {
         this.handleLogout();
       }

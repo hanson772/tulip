@@ -1,16 +1,15 @@
 <template>
   <div class="tag-manage-page">
     <!-- Fixed Top Bar -->
-    <div class="tag-topbar">
+    <div v-if="!embedded" class="tag-topbar">
       <button class="topbar-back" @click="$router.back()">
-        <el-icon :size="22"><ArrowLeft /></el-icon>
+        <el-icon :size="26"><ArrowLeft /></el-icon>
       </button>
-      <span class="topbar-title">标签管理</span>
       <div class="topbar-spacer" />
     </div>
 
     <!-- Content -->
-    <div class="tag-content">
+    <div class="tag-content" :class="{ 'no-topbar': embedded }">
       <!-- Add Tag -->
       <div class="add-tag-section">
         <el-input
@@ -109,6 +108,12 @@ import { ArrowLeft, Edit, Delete } from '@element-plus/icons-vue';
 export default {
   name: 'TagManage',
   components: { ArrowLeft, Edit, Delete },
+  props: {
+    embedded: {
+      type: Boolean,
+      default: false
+    }
+  },
   setup() {
     const store = useStore();
 
@@ -236,18 +241,15 @@ export default {
 .topbar-back {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border: none;
   background: transparent;
   cursor: pointer;
   color: #303133;
-  padding: 4px;
-}
-
-.topbar-title {
-  margin-left: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #303133;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .topbar-spacer {
@@ -257,6 +259,10 @@ export default {
 /* ---------- Content ---------- */
 .tag-content {
   padding: 60px 12px 0;
+}
+
+.tag-content.no-topbar {
+  padding-top: 0;
 }
 
 .loading-state {

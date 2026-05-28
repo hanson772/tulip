@@ -25,17 +25,6 @@ function getDb() {
         updated_at TEXT DEFAULT (datetime('now'))
       )
     `);
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        content TEXT NOT NULL,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      )
-    `);
-    db.exec('CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id)');
 
     // Add avatar column if not exists (migration for existing databases)
     try {
@@ -153,6 +142,47 @@ function getDb() {
     try { db.exec('ALTER TABLE comments ADD COLUMN parent_id INTEGER DEFAULT NULL'); } catch (_) {}
     try { db.exec('ALTER TABLE comments ADD COLUMN reply_to_user_id INTEGER DEFAULT NULL'); } catch (_) {}
     try { db.exec('CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id)'); } catch (_) {}
+
+    // Favorites table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        topic_id INTEGER NOT NULL,
+        created_at TEXT DEFAULT (datetime('now')),
+        UNIQUE(user_id, topic_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_favorites_topic_id ON favorites(topic_id)');
+
+    // Roles table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS roles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
+    // User-Roles junction table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS user_roles (
+        user_id INTEGER NOT NULL,
+        role_id INTEGER NOT NULL,
+        PRIMARY KEY (user_id, role_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Seed default roles
+    const insertRole = db.prepare('INSERT OR IGNORE INTO roles (name, description) VALUES (?, ?)');
+    insertRole.run('user', '普通用户');
+    insertRole.run('admin', '管理员');
   }
   return db;
 }

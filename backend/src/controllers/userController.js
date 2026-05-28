@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Role = require('../models/Role');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -51,6 +52,12 @@ const registerUser = async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Assign default 'user' role
+    const userRole = Role.findByName('user');
+    if (userRole) Role.setUserRoles(user.id, [userRole.id]);
+
+    const roles = Role.getRoleNames(user.id);
+
     res.status(201).json({
       _id: user.id,
       name: user.name,
@@ -58,6 +65,7 @@ const registerUser = async (req, res) => {
       email: user.email,
       avatar: user.avatar,
       level: user.level,
+      roles,
       token
     });
   } catch (error) {
@@ -91,6 +99,8 @@ const loginUser = async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    const roles = Role.getRoleNames(user.id);
+
     res.json({
       _id: user.id,
       name: user.name,
@@ -98,6 +108,7 @@ const loginUser = async (req, res) => {
       email: user.email,
       avatar: user.avatar || null,
       level: user.level || 1,
+      roles,
       token
     });
   } catch (error) {

@@ -3,9 +3,8 @@
     <!-- Fixed Top Bar -->
     <div class="detail-topbar">
       <button class="topbar-back" @click="$router.back()">
-        <el-icon :size="22"><ArrowLeft /></el-icon>
+        <el-icon :size="26"><ArrowLeft /></el-icon>
       </button>
-      <span class="topbar-title" />
       <div class="topbar-spacer" />
       <el-button v-if="isOwner && isMyTopicRoute" text type="primary" size="small" @click="goEdit">
         <el-icon :size="16"><Edit /></el-icon>
@@ -50,19 +49,24 @@
 
         <hr class="detail-divider">
 
-        <!-- Tags -->
-        <div v-if="topic.tags && topic.tags.length" class="detail-tags">
-          <el-tag
-            v-for="tag in topic.tags"
-            :key="tag.id"
-            size="small"
-            type="primary"
-            effect="plain"
-            class="tag-item"
-            @click="filterByTag(tag.name)"
-          >
-            {{ tag.name }}
-          </el-tag>
+        <!-- Tags & Favorite -->
+        <div class="detail-tags-row">
+          <button v-if="topic.status === 'published'" class="favorite-btn" @click="toggleFavorite">
+            <el-icon :size="18" :style="{ color: isFavorited ? '#f56c6c' : '#c0c4cc' }"><Star /></el-icon>
+          </button>
+          <div v-if="topic.tags && topic.tags.length" class="detail-tags">
+            <el-tag
+              v-for="tag in topic.tags"
+              :key="tag.id"
+              size="small"
+              type="primary"
+              effect="plain"
+              class="tag-item"
+              @click="filterByTag(tag.name)"
+            >
+              {{ tag.name }}
+            </el-tag>
+          </div>
         </div>
 
         <!-- Opinions Section -->
@@ -145,7 +149,7 @@
                       </el-button>
                     </template>
                     <!-- Support area -->
-                    <template v-if="isLoggedIn && topic.status !== 'expired' && opinion.selectable">
+                    <template v-if="isLoggedIn && topic.status === 'published' && opinion.selectable">
                       <!-- Green support button when no support yet -->
                       <button
                         v-if="!userSupportedOpinionId"
@@ -205,12 +209,15 @@
               <!-- Top-level comment -->
               <div class="comment-meta">
                 <span class="comment-author">{{ comment.author_name }}</span>
+                <span v-if="comment.user_id === topic.user_id" class="author-star">
+                  <el-icon :size="12"><svg viewBox="0 0 24 24" fill="#f56c6c" width="1em" height="1em"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></el-icon>
+                </span>
                 <span class="comment-time">{{ formatTime(comment.created_at) }}</span>
               </div>
               <div class="comment-body">{{ comment.content }}</div>
 
               <!-- Reply button -->
-              <div v-if="isLoggedIn" class="comment-actions">
+              <div v-if="isLoggedIn && topic.status === 'published'" class="comment-actions">
                 <button
                   class="reply-btn"
                   @click="toggleReplyForm(comment.id)"
@@ -220,7 +227,7 @@
               </div>
 
               <!-- Inline reply form -->
-              <div v-if="isLoggedIn && replyingToCommentId === comment.id" class="reply-add-form">
+              <div v-if="isLoggedIn && topic.status === 'published' && replyingToCommentId === comment.id" class="reply-add-form">
                 <el-input
                   v-model="replyContent"
                   :maxlength="500"
@@ -253,6 +260,9 @@
                 >
                   <div class="reply-meta">
                     <span class="reply-author">{{ reply.author_name }}</span>
+                    <span v-if="reply.user_id === topic.user_id" class="author-star">
+                      <el-icon :size="11"><svg viewBox="0 0 24 24" fill="#f56c6c" width="1em" height="1em"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></el-icon>
+                    </span>
                     <span class="reply-time">{{ formatTime(reply.created_at) }}</span>
                   </div>
                   <div class="reply-body">
@@ -265,7 +275,7 @@
           </div>
 
           <!-- Add Comment (top-level) -->
-          <div v-if="isLoggedIn" class="comment-add-form">
+          <div v-if="isLoggedIn && topic.status === 'published'" class="comment-add-form">
             <el-input
               v-model="newCommentContent"
               :maxlength="500"
@@ -303,12 +313,12 @@
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowLeft, Lock, Edit, Delete, Clock } from '@element-plus/icons-vue';
+import { ArrowLeft, Lock, Edit, Delete, Clock, Star } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 export default {
   name: 'TopicDetail',
-  components: { ArrowLeft, Lock, Edit, Delete, Clock },
+  components: { ArrowLeft, Lock, Edit, Delete, Clock, Star },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -316,6 +326,19 @@ export default {
 
     const topicId = Number(route.params.id);
     const supporting = ref(false);
+
+    // Favorite state
+    const isFavorited = ref(false);
+    const favoriting = ref(false);
+    async function toggleFavorite() {
+      if (favoriting.value) return;
+      favoriting.value = true;
+      const result = await store.dispatch('toggleFavorite', topicId);
+      favoriting.value = false;
+      if (result.success) {
+        isFavorited.value = result.favorited;
+      }
+    }
 
     // Opinion add form
     const newOpinionContent = ref('');
@@ -557,8 +580,12 @@ export default {
       }
     }
 
-    onMounted(() => {
+    onMounted(async () => {
       store.dispatch('fetchTopic', topicId);
+      const result = await store.dispatch('checkFavorite', topicId);
+      if (result.success) {
+        isFavorited.value = result.favorited;
+      }
     });
 
     return {
@@ -568,6 +595,8 @@ export default {
       allComments,
       commentTree,
       userSupportedOpinionId,
+      isFavorited,
+      toggleFavorite,
       isLoggedIn,
       isOwner,
       isMyTopicRoute,
@@ -636,18 +665,15 @@ export default {
 .topbar-back {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border: none;
   background: transparent;
   cursor: pointer;
   color: #303133;
-  padding: 4px;
-}
-
-.topbar-title {
-  margin-left: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #303133;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .topbar-spacer {
@@ -700,12 +726,27 @@ export default {
   color: #c0c4cc;
 }
 
+.detail-tags-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.favorite-btn {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
 .detail-tags {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  margin-bottom: 12px;
 }
 
 .detail-tags .tag-item {
@@ -916,6 +957,11 @@ export default {
 .comment-time {
   font-size: 0.72rem;
   color: #c0c4cc;
+}
+
+.author-star {
+  display: inline-flex;
+  align-items: center;
 }
 
 .comment-body {

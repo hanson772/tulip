@@ -3,9 +3,8 @@
     <!-- Fixed Top Bar -->
     <div class="edit-topbar">
       <button class="topbar-back" @click="goBack">
-        <el-icon :size="22"><ArrowLeft /></el-icon>
+        <el-icon :size="26"><ArrowLeft /></el-icon>
       </button>
-      <span class="topbar-title">编辑主题</span>
       <div class="topbar-spacer" />
     </div>
 
@@ -329,7 +328,7 @@ export default {
       }
 
       try {
-        await ElMessageBox.confirm('发布后将无法再编辑，确定发布吗？', '确认发布', {
+        await ElMessageBox.confirm('发布后将进入审核状态，确定发布吗？', '确认发布', {
           type: 'info',
           confirmButtonText: '发布',
           cancelButtonText: '取消'
@@ -342,7 +341,7 @@ export default {
       const result = await store.dispatch('publishTopic', topicId);
       publishing.value = false;
       if (result.success) {
-        ElMessage.success('主题已发布');
+        ElMessage.success('已提交审核，等待管理员审核');
         router.back();
       } else {
         ElMessage.error(result.message);
@@ -486,18 +485,15 @@ export default {
 .topbar-back {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border: none;
   background: transparent;
   cursor: pointer;
   color: #303133;
-  padding: 4px;
-}
-
-.topbar-title {
-  margin-left: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #303133;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .topbar-spacer {

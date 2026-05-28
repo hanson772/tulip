@@ -52,7 +52,15 @@ const routes = [
   },
   {
     path: '/console',
-    redirect: '/my/topic/add'
+    name: 'Console',
+    component: () => import('@/views/Console.vue'),
+    meta: { requiresAuth: true, hideNav: true }
+  },
+  {
+    path: '/console/review/:id',
+    name: 'ConsoleReview',
+    component: () => import('@/views/console/Review.vue'),
+    meta: { requiresAuth: true, hideNav: true }
   }
 ];
 

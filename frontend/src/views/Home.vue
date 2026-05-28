@@ -53,13 +53,9 @@
               <el-icon :size="18"><User /></el-icon>
               <span>{{ currentUser?.name || '用户' }}</span>
             </div>
-            <div class="drawer-menuitem" @click="drawerVisible = false; $router.push('/my/topic/add')">
+            <div v-if="isAdmin" class="drawer-menuitem" @click="drawerVisible = false; $router.push('/console')">
               <el-icon :size="18"><Setting /></el-icon>
               <span>控制台</span>
-            </div>
-            <div class="drawer-menuitem" @click="drawerVisible = false; $router.push('/my/tags')">
-              <el-icon :size="18"><CollectionTag /></el-icon>
-              <span>标签管理</span>
             </div>
             <div class="drawer-menuitem" @click="handleLogout">
               <el-icon :size="18"><SwitchButton /></el-icon>
@@ -134,8 +130,7 @@
           </div>
           <div class="card-footer">
             <span class="card-stat">
-              <el-icon :size="14"><ChatDotSquare /></el-icon>
-              {{ item.opinion_count || 0 }} 条看法
+                {{ item.opinion_count || 0 }} 条看法
             </span>
             <el-tag
               v-if="item.status === 'expired'"
@@ -163,7 +158,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, inject } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
-import { Menu, Search, HomeFilled, User, UserFilled, Setting, CollectionTag, SwitchButton, ChatDotSquare } from '@element-plus/icons-vue';
+import { Menu, Search, User, UserFilled, Setting, CollectionTag, SwitchButton } from '@element-plus/icons-vue';
 import ProfileDialog from '@/components/ProfileDialog.vue';
 
 const AVATAR_COLORS = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#9B59B6', '#1ABC9C', '#E67E22', '#2ECC71', '#3498DB'];
@@ -181,7 +176,7 @@ function generateInitialAvatar(name) {
 
 export default {
   name: 'HomeView',
-  components: { Menu, Search, HomeFilled, User, UserFilled, Setting, CollectionTag, SwitchButton, ChatDotSquare, ProfileDialog },
+  components: { Menu, Search, User, UserFilled, Setting, CollectionTag, SwitchButton, ProfileDialog },
   setup() {
     const drawerVisible = ref(false);
     const searchQuery = ref('');
@@ -200,6 +195,7 @@ export default {
 
     const isLoggedIn = computed(() => store.getters.isLoggedIn);
     const currentUser = computed(() => store.getters.currentUser);
+    const isAdmin = computed(() => store.getters.hasRole('admin'));
     const topics = computed(() => store.getters.topics);
     const topicsLoading = computed(() => store.getters.topicsLoading);
 
@@ -308,6 +304,7 @@ export default {
       avatarSrc,
       isLoggedIn,
       currentUser,
+      isAdmin,
       topics,
       topicsLoading,
       openLogin,
