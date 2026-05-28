@@ -4,10 +4,10 @@
 
 ## 技术栈
 
-| 层 | 技术 |
-|---|------|
-| 前端 | Vue 3 + Vuex 4 + Element Plus |
-| 后端 | Express.js + SQLite (node:sqlite) |
+| 层     | 技术                                         |
+| ------ | -------------------------------------------- |
+| 前端   | Vue 3 + Vuex 4 + Element Plus                |
+| 后端   | Express.js + SQLite (node:sqlite)            |
 | 数据库 | SQLite（文件存储在 `backend/data/tulip.db`） |
 
 ## 前提条件
@@ -33,14 +33,26 @@ cd backend && npm install && npm run dev
 
 访问 http://localhost:5000
 
-### 方式二：Docker 运行
+### 方式二：Docker compose 运行
+
+```bash
+# 第一步 构建镜像
+docker build -t tulip .
+
+# 第二步 启动服务
+docker run -d  -p 5000:5000 -v {本地文件路径}:/app/data tulip:latest
+# 如果第一次加载，可以初始化管理员账号
+# -e ad_email=admin@xxx.com -e ad_pwd=xxx -e ad_name=admin
+```
+
+### 方式三：Docker compose 运行
 
 ```bash
 # 一行命令：构建镜像并启动
 docker compose up -d --build
 
 # 带超管初始化启动
-ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=123456 docker compose up -d --build
+ad_email=admin@example.com ad_pwd=123456 docker compose up -d --build
 
 # 查看日志
 docker compose logs -f
@@ -75,13 +87,13 @@ docker compose logs -f
 
 ## 环境变量
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `PORT` | `5000` | 后端监听端口 |
-| `JWT_SECRET` | `tulip_jwt_secret_key_change_in_production` | JWT 签名密钥 |
-| `ADMIN_EMAIL` | — | 启动时自动创建超管用户（不设置则跳过） |
-| `ADMIN_PASSWORD` | — | 超管密码 |
-| `ADMIN_NAME` | `Admin` | 超管用户名 |
+| 变量             | 默认值                                      | 说明                                   |
+| ---------------- | ------------------------------------------- | -------------------------------------- |
+| `PORT`           | `5000`                                      | 后端监听端口                           |
+| `JWT_SECRET`     | `tulip_jwt_secret_key_change_in_production` | JWT 签名密钥                           |
+| `ADMIN_EMAIL`    | —                                           | 启动时自动创建超管用户（不设置则跳过） |
+| `ADMIN_PASSWORD` | —                                           | 超管密码                               |
+| `ADMIN_NAME`     | `Admin`                                     | 超管用户名                             |
 
 ## 项目结构
 

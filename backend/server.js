@@ -11,6 +11,19 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
+// Request logging (skip static files)
+app.use((req, res, next) => {
+  if (/\.(js|css|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|eot|map)(\?|$)/i.test(req.url)) {
+    return next();
+  }
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    log.info(`${req.method} ${req.originalUrl} → ${res.statusCode} (${ms}ms) [user:${req.userId || '-'}]`);
+  });
+  next();
+});
+
 // Initialize database
 try {
   require('./src/config/database').getDb();
