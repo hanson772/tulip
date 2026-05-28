@@ -11,9 +11,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
-// Request logging (skip static files)
+// Request logging (API only)
 app.use((req, res, next) => {
-  if (/\.(js|css|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|eot|map)(\?|$)/i.test(req.url)) {
+  if (!req.originalUrl.startsWith('/api')) {
     return next();
   }
   const start = Date.now();

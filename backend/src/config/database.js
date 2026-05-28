@@ -13,7 +13,7 @@ let db;
 function getDb() {
   if (!db) {
     const dir = path.dirname(DB_PATH);
-    log.info(`data_dir: ${dir}.  ${process.env.DB_PATH}. ${__dirname}`);
+
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }

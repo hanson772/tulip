@@ -7,12 +7,9 @@ services:
       - PORT=5000
       - JWT_SECRET=${JWT_SECRET:-tulip_jwt_secret_key_change_in_production}
       # Uncomment to auto-create admin on first startup:
-      # - ad_email=admin@xxx.com
-      # - ad_email=1111
-      # - ad_name=Admin
+      #- ad_email=admin@test.com
+      #- ad_pwd=123456
+      #- ad_name=Admin
     volumes:
-      - tulip-data:/app/data
+      - /Users/chenhaidi/Documents/workspace/docker/data/tulip:/app/data
     restart: unless-stopped
-
-volumes:
-  tulip-data:
