@@ -6,6 +6,10 @@ services:
     environment:
       - PORT=5000
       - JWT_SECRET=${JWT_SECRET:-tulip_jwt_secret_key_change_in_production}
+      # Uncomment to auto-create admin on first startup:
+      # - ADMIN_EMAIL=admin@example.com
+      # - ADMIN_PASSWORD=123456
+      # - ADMIN_NAME=Admin
     volumes:
       - tulip-data:/app/data
     restart: unless-stopped

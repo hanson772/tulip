@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
+const log = require('./src/config/logger');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -13,10 +14,13 @@ app.use(express.json({ limit: '1mb' }));
 // Initialize database
 try {
   require('./src/config/database').getDb();
-  console.log('SQLite database initialized');
+  log.info('SQLite database initialized');
 } catch (err) {
-  console.error('Database initialization error:', err);
+  log.error('Database initialization error:', err.message);
 }
+
+// Seed admin user from environment variables
+require('./src/config/seedAdmin')();
 
 // API routes
 app.use('/api/users', require('./src/routes/userRoutes'));
@@ -35,5 +39,15 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  log.info(`Server is running on port ${PORT}`);
+});
+
+// Flush logs on uncaught errors
+process.on('uncaughtException', (err) => {
+  log.error('Uncaught exception:', err.message);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  log.error('Unhandled rejection:', reason?.message || reason);
 });
