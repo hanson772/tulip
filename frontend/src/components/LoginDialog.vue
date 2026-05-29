@@ -29,6 +29,24 @@
               show-password
             />
           </el-form-item>
+          <el-form-item label="Captcha" prop="captchaCode">
+            <div style="display:flex;gap:8px;width:100%">
+              <el-input
+                v-model="loginForm.captchaCode"
+                placeholder="Captcha code"
+                maxlength="4"
+                style="width:120px"
+              />
+              <div
+                style="flex:1;cursor:pointer;border:1px solid #dcdfe6;border-radius:4px;display:flex;align-items:center;justify-content:center;min-height:32px;background:#fafafa"
+                @click="refreshCaptcha"
+                title="Click to refresh"
+              >
+                <span v-if="!captchaSvg" style="color:#999;font-size:12px">Load Captcha</span>
+                <span v-html="captchaSvg" style="display:flex;align-items:center"></span>
+              </div>
+            </div>
+          </el-form-item>
           <el-form-item>
             <el-button
               type="primary"
@@ -93,10 +111,12 @@ export default {
   data() {
     return {
       activeTab: 'login',
-      loginForm: { email: '', password: '' },
+      loginForm: { email: '', password: '', captchaCode: '' },
       registerForm: { name: '', email: '', password: '' },
       loginLoading: false,
       registerLoading: false,
+      captchaSvg: null,
+      captchaId: null,
       loginRules: {
         email: [
           { required: true, message: 'Email is required', trigger: 'blur' },
@@ -105,6 +125,10 @@ export default {
         password: [
           { required: true, message: 'Password is required', trigger: 'blur' },
           { min: 6, message: 'Min 6 characters', trigger: 'blur' }
+        ],
+        captchaCode: [
+          { required: true, message: 'Captcha is required', trigger: 'blur' },
+          { min: 4, max: 4, message: '4 characters', trigger: 'blur' }
         ]
       },
       registerRules: {
@@ -120,6 +144,11 @@ export default {
       }
     };
   },
+  watch: {
+    modelValue(val) {
+      if (val) this.refreshCaptcha();
+    }
+  },
   methods: {
     async handleLogin() {
       const valid = await this.$refs.loginFormRef.validate().catch(() => false);
@@ -128,7 +157,9 @@ export default {
       this.loginLoading = true;
       const result = await this.$store.dispatch('login', {
         email: this.loginForm.email,
-        password: this.loginForm.password
+        password: this.loginForm.password,
+        captchaId: this.captchaId,
+        captchaCode: this.loginForm.captchaCode,
       });
       this.loginLoading = false;
 
@@ -139,6 +170,7 @@ export default {
         window.location.reload();
       } else {
         ElMessage.error(result.message);
+        this.refreshCaptcha();
       }
     },
     async handleRegister() {
@@ -162,9 +194,18 @@ export default {
         ElMessage.error(result.message);
       }
     },
+    async refreshCaptcha() {
+      const result = await this.$store.dispatch('fetchCaptcha');
+      if (result.success) {
+        this.captchaSvg = this.$store.state.captchaSvg;
+        this.captchaId = this.$store.state.captchaId;
+      }
+    },
     resetForms() {
-      this.loginForm = { email: '', password: '' };
+      this.loginForm = { email: '', password: '', captchaCode: '' };
       this.registerForm = { name: '', email: '', password: '' };
+      this.captchaSvg = null;
+      this.captchaId = null;
       this.$refs.loginFormRef?.resetFields();
       this.$refs.registerFormRef?.resetFields();
     }

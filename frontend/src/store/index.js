@@ -36,6 +36,8 @@ export default createStore({
     myParticipatedLoading: false,
     tags: [],
     tagsLoading: false,
+    captchaSvg: null,
+    captchaId: null,
   },
   mutations: {
     SET_USER(state, user) {
@@ -162,13 +164,32 @@ export default createStore({
     SET_TAGS_LOADING(state, val) {
       state.tagsLoading = val;
     },
+    SET_CAPTCHA(state, { requestId, svg }) {
+      state.captchaId = requestId;
+      state.captchaSvg = svg;
+    },
+    CLEAR_CAPTCHA(state) {
+      state.captchaId = null;
+      state.captchaSvg = null;
+    },
   },
   actions: {
-    async login({ commit }, { email, password }) {
+    async fetchCaptcha({ commit }) {
+      try {
+        const response = await axios.get(`/console/captcha`);
+        commit("SET_CAPTCHA", response.data);
+        return { success: true };
+      } catch (_) {
+        return { success: false };
+      }
+    },
+    async login({ commit }, { email, password, captchaId, captchaCode }) {
       try {
         const response = await axios.post(`${API_BASE_URL}/users/login`, {
           email,
           password,
+          captchaId,
+          captchaCode,
         });
 
         const { token, ...userData } = response.data;

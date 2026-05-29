@@ -1,0 +1,17 @@
+const NodeCache = require('node-cache');
+
+const cache = new NodeCache();
+
+function set(key, value, ttl) {
+  return cache.set(key, value, ttl);
+}
+
+function get(key) {
+  return cache.get(key);
+}
+
+function del(key) {
+  return cache.del(key);
+}
+
+module.exports = { set, get, del };

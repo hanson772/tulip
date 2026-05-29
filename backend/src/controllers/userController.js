@@ -1,18 +1,30 @@
-const User = require('../models/User');
-const Role = require('../models/Role');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const User = require("../models/User");
+const Role = require("../models/Role");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { validateCaptcha } = require("./captchaController");
 
-const AVATAR_COLORS = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#9B59B6', '#1ABC9C', '#E67E22', '#2ECC71', '#3498DB'];
+const AVATAR_COLORS = [
+  "#409EFF",
+  "#67C23A",
+  "#E6A23C",
+  "#F56C6C",
+  "#909399",
+  "#9B59B6",
+  "#1ABC9C",
+  "#E67E22",
+  "#2ECC71",
+  "#3498DB",
+];
 
 function generateInitialAvatar(name) {
-  const initial = (name || '?')[0].toUpperCase();
-  const bgColor = AVATAR_COLORS[(name || '').length % AVATAR_COLORS.length];
+  const initial = (name || "?")[0].toUpperCase();
+  const bgColor = AVATAR_COLORS[(name || "").length % AVATAR_COLORS.length];
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
     <circle cx="50" cy="50" r="50" fill="${bgColor}"/>
     <text x="50" y="50" text-anchor="middle" dominant-baseline="central" fill="white" font-size="40" font-family="Arial,Helvetica,sans-serif" font-weight="bold">${initial}</text>
   </svg>`;
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 
 // @desc    Register user
@@ -23,9 +35,9 @@ const registerUser = async (req, res) => {
     const { name, email, password } = req.body;
 
     // Check if user already exists
-    const existingUser = User.findOne('email', email);
+    const existingUser = User.findOne("email", email);
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     // Hash password
@@ -42,18 +54,18 @@ const registerUser = async (req, res) => {
       password: hashedPassword,
       nickname: name,
       level: 1,
-      avatar
+      avatar,
     });
 
     // Generate JWT
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: '7d' }
+      process.env.JWT_SECRET || "fallback_secret",
+      { expiresIn: "7d" },
     );
 
     // Assign default 'user' role
-    const userRole = Role.findByName('user');
+    const userRole = Role.findByName("user");
     if (userRole) Role.setUserRoles(user.id, [userRole.id]);
 
     const roles = Role.getRoleNames(user.id);
@@ -66,10 +78,10 @@ const registerUser = async (req, res) => {
       avatar: user.avatar,
       level: user.level,
       roles,
-      token
+      token,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error during registration' });
+    res.status(500).json({ message: "Server error during registration" });
   }
 };
 
@@ -78,30 +90,42 @@ const registerUser = async (req, res) => {
 // @access  Public
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, captchaId, captchaCode } = req.body;
+
+    // Validate captcha
+    if (!captchaId || !captchaCode) {
+      return res.status(400).json({ message: "验证码必填" });
+    }
+    const captchaResult = validateCaptcha(captchaId, captchaCode);
+    if (!captchaResult.valid) {
+      if (captchaResult.reason === "expired") {
+        return res.status(400).json({ message: "验证码过期，请刷新" });
+      }
+      return res.status(400).json({ message: "验证码不正确，请刷新" });
+    }
 
     // Find user by email
-    const user = User.findOne('email', email);
+    const user = User.findOne("email", email);
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: "用户验证错误" });
     }
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: "用户验证错误" });
     }
 
     // Check if user is disabled
     if (user.disabled) {
-      return res.status(403).json({ message: 'Account has been disabled' });
+      return res.status(403).json({ message: "您的账号被禁用，暂时不能使用" });
     }
 
     // Generate JWT
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: '7d' }
+      process.env.JWT_SECRET || "fallback_secret",
+      { expiresIn: "7d" },
     );
 
     const roles = Role.getRoleNames(user.id);
@@ -115,10 +139,10 @@ const loginUser = async (req, res) => {
       level: user.level || 1,
       muted: !!user.muted,
       roles,
-      token
+      token,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error during login' });
+    res.status(500).json({ message: "Server error during login" });
   }
 };
 
@@ -130,22 +154,22 @@ const uploadAvatar = async (req, res) => {
     const { avatar } = req.body;
 
     if (!avatar) {
-      return res.status(400).json({ message: 'Avatar data is required' });
+      return res.status(400).json({ message: "Avatar data is required" });
     }
 
     // Validate size: base64 string of a 500KB image is roughly 500K chars
     if (avatar.length > 700000) {
-      return res.status(400).json({ message: 'Avatar too large, max 500KB' });
+      return res.status(400).json({ message: "Avatar too large, max 500KB" });
     }
 
     const user = User.updateAvatar(req.userId, avatar);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.json({ avatar: user.avatar });
   } catch (error) {
-    res.status(500).json({ message: 'Server error during avatar upload' });
+    res.status(500).json({ message: "Server error during avatar upload" });
   }
 };
 
@@ -157,12 +181,12 @@ const updateProfile = async (req, res) => {
     const { nickname } = req.body;
 
     if (!nickname || !nickname.trim()) {
-      return res.status(400).json({ message: 'Nickname is required' });
+      return res.status(400).json({ message: "Nickname is required" });
     }
 
     const user = User.updateProfile(req.userId, { nickname: nickname.trim() });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.json({
@@ -171,10 +195,10 @@ const updateProfile = async (req, res) => {
       nickname: user.nickname,
       email: user.email,
       avatar: user.avatar,
-      level: user.level
+      level: user.level,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error during profile update' });
+    res.status(500).json({ message: "Server error during profile update" });
   }
 };
 
@@ -183,16 +207,16 @@ const updateProfile = async (req, res) => {
 // @access  Private (admin)
 const getAllUsers = (req, res) => {
   try {
-    const search = req.query.search || '';
+    const search = req.query.search || "";
     const users = User.findAll(search);
     // Attach roles to each user
-    const result = users.map(u => ({
+    const result = users.map((u) => ({
       ...u,
-      roles: Role.getRoleNames(u.id)
+      roles: Role.getRoleNames(u.id),
     }));
     res.json(result);
   } catch (error) {
-    res.status(500).json({ message: 'Server error fetching users' });
+    res.status(500).json({ message: "Server error fetching users" });
   }
 };
 
@@ -203,10 +227,10 @@ const disableUser = (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const user = User.setDisabled(userId, true);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User disabled', user });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User disabled", user });
   } catch (error) {
-    res.status(500).json({ message: 'Server error disabling user' });
+    res.status(500).json({ message: "Server error disabling user" });
   }
 };
 
@@ -217,10 +241,10 @@ const enableUser = (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const user = User.setDisabled(userId, false);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User enabled', user });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User enabled", user });
   } catch (error) {
-    res.status(500).json({ message: 'Server error enabling user' });
+    res.status(500).json({ message: "Server error enabling user" });
   }
 };
 
@@ -231,10 +255,10 @@ const muteUser = (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const user = User.setMuted(userId, true);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User muted', user });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User muted", user });
   } catch (error) {
-    res.status(500).json({ message: 'Server error muting user' });
+    res.status(500).json({ message: "Server error muting user" });
   }
 };
 
@@ -245,10 +269,10 @@ const unmuteUser = (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const user = User.setMuted(userId, false);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User unmuted', user });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User unmuted", user });
   } catch (error) {
-    res.status(500).json({ message: 'Server error unmuting user' });
+    res.status(500).json({ message: "Server error unmuting user" });
   }
 };
 
@@ -260,14 +284,16 @@ const adminResetPassword = async (req, res) => {
     const userId = parseInt(req.params.id);
     const { password } = req.body;
     if (!password || password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
     }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     User.resetPassword(userId, hashedPassword);
-    res.json({ message: 'Password reset successfully' });
+    res.json({ message: "Password reset successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'Server error resetting password' });
+    res.status(500).json({ message: "Server error resetting password" });
   }
 };
 
@@ -281,5 +307,5 @@ module.exports = {
   enableUser,
   muteUser,
   unmuteUser,
-  adminResetPassword
+  adminResetPassword,
 };
