@@ -41,6 +41,7 @@ app.use('/api/topics', require('./src/routes/topicRoutes'));
 app.use('/api/tags', require('./src/routes/tagRoutes'));
 app.use('/api/favorites', require('./src/routes/favoriteRoutes'));
 app.use('/api/roles', require('./src/routes/roleRoutes'));
+app.use('/console', require('./src/routes/consoleRoutes'));
 
 // Serve built frontend static files
 const publicPath = path.join(__dirname, 'public');
