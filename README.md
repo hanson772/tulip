@@ -48,6 +48,8 @@ docker run -d  -p 5000:5000 -v {本地文件路径}:/app/data tulip:latest
 ### 方式三：Docker compose 运行
 
 ```bash
+# 复制compose文件，修改参数
+cp docker-compose-local.yml docker-compose.yml
 # 一行命令：构建镜像并启动
 docker compose up -d --build
 
