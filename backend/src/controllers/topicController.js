@@ -3,6 +3,7 @@ const Opinion = require('../models/Opinion');
 const Tag = require('../models/Tag');
 const Comment = require('../models/Comment');
 const Role = require('../models/Role');
+const User = require('../models/User');
 
 const getTopics = (req, res) => {
   try {
@@ -228,6 +229,11 @@ const reviewTopic = (req, res) => {
 
 const createOpinion = (req, res) => {
   try {
+    const user = User.findById(req.userId);
+    if (user?.muted) {
+      return res.status(403).json({ message: 'You are muted and cannot manage opinions' });
+    }
+
     const topicId = Number(req.params.id);
     const topic = Topic.findById(topicId);
     if (!topic) {
@@ -386,6 +392,11 @@ const getComments = (req, res) => {
 
 const createComment = (req, res) => {
   try {
+    const user = User.findById(req.userId);
+    if (user?.muted) {
+      return res.status(403).json({ message: 'You are muted and cannot comment' });
+    }
+
     const topicId = Number(req.params.id);
     const topic = Topic.findById(topicId);
     if (!topic) {

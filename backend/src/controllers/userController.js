@@ -92,6 +92,11 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    // Check if user is disabled
+    if (user.disabled) {
+      return res.status(403).json({ message: 'Account has been disabled' });
+    }
+
     // Generate JWT
     const token = jwt.sign(
       { userId: user.id },
@@ -108,6 +113,7 @@ const loginUser = async (req, res) => {
       email: user.email,
       avatar: user.avatar || null,
       level: user.level || 1,
+      muted: !!user.muted,
       roles,
       token
     });
