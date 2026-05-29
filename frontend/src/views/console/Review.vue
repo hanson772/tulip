@@ -93,7 +93,7 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 
-const API_BASE_URL = process.env.VUE_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.VUE_APP_API_URL || '/api';
 
 export default {
   name: 'ConsoleReview',

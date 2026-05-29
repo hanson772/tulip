@@ -2,7 +2,7 @@ import { createStore } from "vuex";
 import axios from "axios";
 
 // Base API URL - change this to match your backend URL
-const API_BASE_URL = process.env.VUE_APP_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.VUE_APP_API_URL || "/api";
 
 // Restore auth header and user data on page refresh
 const savedToken = localStorage.getItem("token");

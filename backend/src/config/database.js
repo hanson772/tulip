@@ -47,6 +47,16 @@ function getDb() {
     } catch (_) {
       // Column already exists
     }
+    try {
+      db.exec("ALTER TABLE users ADD COLUMN disabled INTEGER DEFAULT 0");
+    } catch (_) {
+      // Column already exists
+    }
+    try {
+      db.exec("ALTER TABLE users ADD COLUMN muted INTEGER DEFAULT 0");
+    } catch (_) {
+      // Column already exists
+    }
 
     // Topics table
     db.exec(`

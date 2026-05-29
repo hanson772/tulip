@@ -172,9 +172,108 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// @desc    Get all users (with optional search)
+// @route   GET /api/users/all
+// @access  Private (admin)
+const getAllUsers = (req, res) => {
+  try {
+    const search = req.query.search || '';
+    const users = User.findAll(search);
+    // Attach roles to each user
+    const result = users.map(u => ({
+      ...u,
+      roles: Role.getRoleNames(u.id)
+    }));
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching users' });
+  }
+};
+
+// @desc    Disable user
+// @route   POST /api/users/:id/disable
+// @access  Admin
+const disableUser = (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const user = User.setDisabled(userId, true);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User disabled', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error disabling user' });
+  }
+};
+
+// @desc    Enable user
+// @route   POST /api/users/:id/enable
+// @access  Admin
+const enableUser = (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const user = User.setDisabled(userId, false);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User enabled', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error enabling user' });
+  }
+};
+
+// @desc    Mute user
+// @route   POST /api/users/:id/mute
+// @access  Admin
+const muteUser = (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const user = User.setMuted(userId, true);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User muted', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error muting user' });
+  }
+};
+
+// @desc    Unmute user
+// @route   POST /api/users/:id/unmute
+// @access  Admin
+const unmuteUser = (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const user = User.setMuted(userId, false);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User unmuted', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error unmuting user' });
+  }
+};
+
+// @desc    Reset user password
+// @route   POST /api/users/:id/reset-password
+// @access  Admin
+const adminResetPassword = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    User.resetPassword(userId, hashedPassword);
+    res.json({ message: 'Password reset successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error resetting password' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   uploadAvatar,
-  updateProfile
+  updateProfile,
+  getAllUsers,
+  disableUser,
+  enableUser,
+  muteUser,
+  unmuteUser,
+  adminResetPassword
 };
